@@ -4,6 +4,7 @@ int Manager::SendMsg(SOCKET sock, UPACKET& packet)
 	char* pMsg = (char*)&packet;
 	int iSendSize = 0;
 	do {
+		//이전에 전송한 길이 이후의 배열을 전송
 		int iSendByte = send(sock, &pMsg[iSendSize],
 			packet.ph.len - iSendSize, 0);
 		if (iSendByte == SOCKET_ERROR)
@@ -14,6 +15,7 @@ int Manager::SendMsg(SOCKET sock, UPACKET& packet)
 			}
 		}
 		iSendSize += iSendByte;
+		//전송한 크기가 패킷의 길이보다 커질때까지 반복
 	} while (iSendSize < packet.ph.len);
 	return iSendSize;
 }
@@ -132,19 +134,23 @@ int Manager::RecvUser(NetUser& user)
 }
 int Manager::Broadcast(NetUser& user)
 {
-	if (user.m_packetPool.size() > 0)
+	if (user.m_packetPool.size() > 0)//패킷이 존재할때
 	{
 		list<Packet>::iterator iter;
+		//패킷 풀의 내용들을 순회
 		for (iter = user.m_packetPool.begin(); iter != user.m_packetPool.end();)
 		{
+			//유저 리스트를 순회
 			for (NetUser& send : UserList)
 			{
+				//해당 유저의 소캣을 통해 패킷 전송
 				int Ret = SendMsg(send.m_Socket, (*iter).m_uPacket);
 				if (Ret <= 0)
 				{
 					send.m_Connect = false;
 				}
 			}
+			//다음 전송을 위해 패킷 풀을 비움
 			iter = user.m_packetPool.erase(iter);
 		}
 	}
